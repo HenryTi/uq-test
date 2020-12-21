@@ -1,0 +1,38 @@
+import { CUqApp } from "./CBase";
+import { VMain } from "./VMain";
+
+const subjectName = '项目积分';
+
+export class CApp extends CUqApp {
+
+	protected async internalStart(isUserLogin: boolean) {
+		//this.setRes(res);
+		//if (isUserLogin === true) await this.initMySetting();
+		//if (this.isRouting === false) 
+		//await this.startHome();
+		this.openVPage(VMain, undefined, this.dispose);
+	}
+
+	test = async () => {
+		let ret = await this.uqs.Test.Test.query({aB:1});
+		alert('return: ' + JSON.stringify(ret));
+	}
+
+	notify = async () => {
+		let ret = await this.uqs.Test.Notify.submit({
+			subject: subjectName, 
+			discription: 'memo-test @' + new Date().toString(), 
+			delta: 2,
+			balance: undefined,
+		});
+		alert('notify return: ' + JSON.stringify(ret));
+	}
+
+	subject = async () => {
+		let name = 'test-subject';
+		let discription = 'test-subject-discription';
+		//let ret = await this.uqs.test.Subject.save(undefined, {name, discription});
+		await this.uqs.Test.BusSubject.submit({id: 1, name:subjectName, discription})
+		alert('notify return: ' + JSON.stringify(1));
+	}
+}
