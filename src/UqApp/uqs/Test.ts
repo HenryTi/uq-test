@@ -1,10 +1,19 @@
-//=== UqApp builder created on Sun Dec 20 2020 22:25:15 GMT-0500 (GMT-05:00) ===//
+//=== UqApp builder created on Mon Dec 21 2020 19:47:55 GMT-0500 (GMT-05:00) ===//
 import { UqTuid, UqQuery, UqAction, UqSheet/*, Map, Tag*/ } from "tonva";
 
 //===============================
 //======= UQ BizDev/test ========
 //===============================
 export namespace Test {
+export interface Tuid$user {
+	name: string;
+	nick: string;
+	icon: string;
+	assigned: string;
+	roles: number;
+	poke: number;
+}
+
 export interface Tuid$sheet {
 	no: string;
 	user: number;
@@ -19,27 +28,18 @@ export interface Tuid$sheet {
 	processing: number;
 }
 
-export interface TuidT1 {
-	a: string;
-	t2: string;
-}
-
 export interface TuidProduct {
 	name: string;
-}
-
-export interface Tuid$user {
-	name: string;
-	nick: string;
-	icon: string;
-	assigned: string;
-	roles: number;
-	poke: number;
 }
 
 export interface TuidTestTuid {
 	name: string;
 	t: number;
+}
+
+export interface TuidT1 {
+	a: string;
+	t2: string;
 }
 
 export interface TuidSubject {
@@ -81,17 +81,20 @@ interface ReturnTestQueryBusMain {
 	p1: string;
 	p2: any;
 	p3: number;
+	$id: number;
 }
 interface ReturnTestQueryBusRetArr {
 	a1: string;
 	a2: any;
 	a3: any;
 	a4: number;
+	$id: number;
 }
 interface ReturnTestQueryBusRetArr2 {
 	b3: string;
 	cb2: any;
 	aa3: any;
+	$id: number;
 }
 interface ResultTestQueryBus {
 	main: ReturnTestQueryBusMain[];
@@ -103,6 +106,7 @@ export interface Param$poked {
 }
 interface Return$pokedRet {
 	poke: number;
+	$id: number;
 }
 interface Result$poked {
 	ret: Return$pokedRet[];
@@ -113,6 +117,7 @@ export interface ParamCall1 {
 interface ReturnCall1Ret {
 	user: number;
 	t1: number;
+	$id: number;
 }
 interface ResultCall1 {
 	ret: ReturnCall1Ret[];
@@ -124,6 +129,7 @@ export interface ParamTest {
 interface ReturnTestRet {
 	aE: number;
 	cD: number;
+	$id: number;
 }
 interface ResultTest {
 	ret: ReturnTestRet[];
@@ -131,11 +137,11 @@ interface ResultTest {
 
 
 export interface UqTest {
-	$sheet: UqTuid<Tuid$sheet>;
-	T1: UqTuid<TuidT1>;
-	Product: UqTuid<TuidProduct>;
 	$user: UqTuid<Tuid$user>;
+	$sheet: UqTuid<Tuid$sheet>;
+	Product: UqTuid<TuidProduct>;
 	TestTuid: UqTuid<TuidTestTuid>;
+	T1: UqTuid<TuidT1>;
 	Subject: UqTuid<TuidSubject>;
 	A: UqAction<ParamA, ResultA>;
 	Act: UqAction<ParamAct, ResultAct>;

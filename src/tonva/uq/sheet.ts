@@ -53,41 +53,21 @@ export class UqSheet<M> extends Entity {
         }
         return ret;
     }
-    /*
-    private setStateAccess(s:SheetState, s1:SheetState) {
-        if (s === undefined) return;
-        for (let action of s1.actions) {
-            let acn = action.name;
-            let ac = s.actions.find(a=>a.name === acn);
-            if (ac === undefined) continue;
-            s.actions.push(action);
-        }
-    }*/
     async save(discription:string, data:M):Promise<any> {
-        /*
-        await this.loadSchema();
         let {id} = this.uq;
-        let text = this.pack(data);
-
-        let ret = await this.uqApi.sheetSave(this.name, );
-        return ret;
-        */
-        let {id} = this.uq;
-        //let text = this.pack(data);
         let params = {app: id, discription: discription, data:data};
         return await new SaveCaller(this, params).request();
-        /*
-        let {id, state} = ret;
-        if (id > 0) this.changeStateCount(state, 1);
-        return ret;
-        */
+    }
+    async saveDirect(discription:string, data:M):Promise<any> {
+        let {id} = this.uq;
+        let params = {app: id, discription: discription, data:data};
+        return await new SaveDirectCaller(this, params).request();
     }
     async action(id:number, flow:number, state:string, action:string) {
-        /*
-        await this.loadSchema();
-        return await this.uqApi.sheetAction(this.name, {id:id, flow:flow, state:state, action:action});
-        */
         return await new ActionCaller(this, {id:id, flow:flow, state:state, action:action}).request();
+    }
+    async actionDirect(id:number, flow:number, state:string, action:string) {
+        return await new ActionDirectCaller(this, {id:id, flow:flow, state:state, action:action}).request();
     }
     private unpack(data:any):{brief:string, data:M, flows:any[]} {
         //if (this.schema === undefined) await this.loadSchema();
@@ -192,10 +172,17 @@ class SaveCaller extends SheetCaller<{app:number; discription:string; data:any}>
     }
 }
 
+class SaveDirectCaller extends SaveCaller {
+    get path():string {return `sheet/${this.entity.name}/direct`;}
+}
+
 class ActionCaller extends SheetCaller<{id:number, flow:number, state:string, action:string}> {
     method = 'PUT';
     get path():string {return `sheet/${this.entity.name}`;}
-    //buildParams() {return this.entity.buildParams(this.params);}
+}
+
+class ActionDirectCaller extends ActionCaller {
+    get path():string {return `sheet/${this.entity.name}/direct`;}
 }
 
 class GetSheetCaller extends SheetCaller<number> {

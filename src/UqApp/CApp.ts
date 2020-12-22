@@ -1,7 +1,6 @@
 //=== UqApp builder created on Sat Dec 19 2020 21:49:21 GMT-0500 (GMT-05:00) ===//
 import { CTest } from "UqTest/CTest";
 import { testCustomerPay } from "UqTest/CustmerPay";
-import { testOrder } from "../UqTest/Order";
 import { CUqApp } from "./CBase";
 import { VMain } from "./VMain";
 

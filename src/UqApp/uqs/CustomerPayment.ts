@@ -1,4 +1,4 @@
-//=== UqApp builder created on Sun Dec 20 2020 22:25:15 GMT-0500 (GMT-05:00) ===//
+//=== UqApp builder created on Mon Dec 21 2020 19:47:55 GMT-0500 (GMT-05:00) ===//
 import { UqTuid, UqQuery, UqAction, UqSheet/*, Map, Tag*/ } from "tonva";
 
 //===============================
@@ -67,7 +67,7 @@ export interface SheetDeposit {
 export interface SheetInvoice {
 	customer: number;
 	detail: {
-		invoicePendingId: number;
+		pendingId: number;
 		amount: any;
 	}[];
 }
@@ -79,6 +79,18 @@ export interface SheetOrder {
 		pack: number;
 		quantity: any;
 		amount: any;
+	}[];
+}
+
+export interface SheetReceive {
+	customer: number;
+	order: number;
+	amount: any;
+	rows: {
+		pendingId: number;
+		orderInRow: number;
+		row: number;
+		rowAmount: any;
 	}[];
 }
 
@@ -99,7 +111,6 @@ interface ReturnCustomerPendingDeliverRet {
 	sheet: number;
 	row: number;
 	quantity: any;
-	$id: number;
 }
 interface ResultCustomerPendingDeliver {
 	ret: ReturnCustomerPendingDeliverRet[];
@@ -113,7 +124,6 @@ interface ReturnCustomerPendingInvoiceRet {
 	sheet: number;
 	row: number;
 	amount: any;
-	$id: number;
 }
 interface ResultCustomerPendingInvoice {
 	ret: ReturnCustomerPendingInvoiceRet[];
@@ -127,10 +137,40 @@ interface ReturnCustomerPendingReceivableRet {
 	sheet: number;
 	row: number;
 	amount: any;
-	$id: number;
 }
 interface ResultCustomerPendingReceivable {
 	ret: ReturnCustomerPendingReceivableRet[];
+}
+
+export interface ParamGetCustomerBalance {
+	customer: number;
+}
+interface ReturnGetCustomerBalanceRet {
+	customer: number;
+	deposit: any;
+	receivable: any;
+	invoiceShould: any;
+	invoicePre: any;
+	$id: number;
+}
+interface ResultGetCustomerBalance {
+	ret: ReturnGetCustomerBalanceRet[];
+}
+
+export interface ParamGetCustomerHistory {
+	customer: number;
+	before: any;
+}
+interface ReturnGetCustomerHistory$page {
+	date: any;
+	customer: number;
+	action: number;
+	sheet: number;
+	row: number;
+	$id: number;
+}
+interface ResultGetCustomerHistory {
+	$page: ReturnGetCustomerHistory$page[];
 }
 
 
@@ -141,10 +181,13 @@ export interface UqCustomerPayment {
 	Deposit: UqSheet<SheetDeposit>;
 	Invoice: UqSheet<SheetInvoice>;
 	Order: UqSheet<SheetOrder>;
+	Receive: UqSheet<SheetReceive>;
 	$poked: UqQuery<Param$poked, Result$poked>;
 	CustomerPendingDeliver: UqQuery<ParamCustomerPendingDeliver, ResultCustomerPendingDeliver>;
 	CustomerPendingInvoice: UqQuery<ParamCustomerPendingInvoice, ResultCustomerPendingInvoice>;
 	CustomerPendingReceivable: UqQuery<ParamCustomerPendingReceivable, ResultCustomerPendingReceivable>;
+	GetCustomerBalance: UqQuery<ParamGetCustomerBalance, ResultGetCustomerBalance>;
+	GetCustomerHistory: UqQuery<ParamGetCustomerHistory, ResultGetCustomerHistory>;
 }
 }
 

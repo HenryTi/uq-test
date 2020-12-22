@@ -90,7 +90,7 @@ class Host {
         let host = this.getCenterHost();
         this.url = centerUrlFromHost(host);
         this.ws = centerWsFromHost(host);
-        this.resHost = this.getResHost();
+		this.resHost = this.getResHost();
     }
 
     private debugHostUrl(host:string) {return `http://${host}/hello`}
@@ -119,14 +119,6 @@ class Host {
                 }
             }
         }
-        /*
-        let p = 0;
-        for (let i in hosts) {
-            let hostValue = hosts[i];
-            hostValue.local = results[p];
-            ++p;
-        }
-        */
     }
 
     private getCenterHost():string {
@@ -201,7 +193,7 @@ export const host:Host = new Host();
 
 // 实际上，一秒钟不够。web服务器会自动停。重启的时候，可能会比较长时间。也许两秒甚至更多。
 //const timeout = 2000;
-const timeout = 200;
+const timeout = 2000;
 
 function fetchLocalCheck(url:string):Promise<any> {
     return new Promise((resolve, reject) => {
@@ -217,7 +209,7 @@ function fetchLocalCheck(url:string):Promise<any> {
 
 async function localCheck(url:string):Promise<boolean> {
     try {
-        await fetchLocalCheck(url);
+		await fetchLocalCheck(url);
         return true;
     }
     catch (err) {

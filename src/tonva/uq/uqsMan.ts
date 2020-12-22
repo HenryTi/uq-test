@@ -49,7 +49,6 @@ export class UQsMan {
     private collection: {[uqName: string]: UqMan};
     private readonly tvs: TVs;
 
-    readonly name: string;
     readonly appOwner: string;
     readonly appName: string;
     readonly localMap: LocalMap;

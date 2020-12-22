@@ -193,6 +193,12 @@ async function buildUqsFolder(uqsFolder:string, options: UqAppOptions) {
 		if (lowerI !== i) continue;
 		uqs.push(coll[i]);
 	}
+	
+	if (!uqsMan.id) {
+		let error = options.uqAppName + ' not defined!';
+		throw new Error(error);
+	}
+
 	for (let uq of uqs) {
 		promiseArr.push(loadUqEntities(uq));
 	}

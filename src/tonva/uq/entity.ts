@@ -209,7 +209,7 @@ export abstract class Entity {
         let dt: Date;
         switch (typeof val) {
             default: debugger; throw new Error('escape datetime field in pack data error: value=' + val);
-            case 'undefined': return '';
+            case 'undefined': return undefined;
             case 'object': dt = (val as Date); break;
             case 'string':
             case 'number': dt = new Date(val); break;
