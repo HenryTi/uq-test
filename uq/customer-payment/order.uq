@@ -1,0 +1,46 @@
+SHEET Order Ver 0.2 (
+	customer ID,
+	Arr Detail (
+		product ID,
+		pack ID,
+		quantity DEC(14,2),
+		amount DEC(14,2),
+	),
+)
+ACTION {
+	FOREACH Detail {
+		BOOK OrderDetail AT($id, $row)
+			SET customer=customer, product=product, pack=pack, quantity=quantity, amount=amount;
+	} 
+	HISTORY CustomerHistory 
+		SET customer=customer, action=EnumCustomerAction.order, sheet=$id, user=$user;
+}
+-- 公司内部员工确认订单，记应收，发货
+-- 在发货之后，记应票
+ACTION confirm {
+	-- 用户是不是有这个权限，暂时不加入这个判断
+	-- IF (SELECT canConfirmOrder FROM UserCustomer WHERE user=$user)=0 {RETURN;}
+	FOREACH Detail {
+		PENDING PendingOrderInvoice +(customer:customer, sheet:$id, row:$row);
+		PENDING PendingOrderDeliver +(customer:customer, sheet:$id, row:$row);
+		PENDING PendingOrderReceivable +(customer:customer, sheet:$id, row:$row);
+		BOOK CustomerAccount AT(customer) SET receivable+=amount, invoiceShould+=amount;
+	} 
+	HISTORY CustomerHistory 
+		SET customer=customer, action=EnumCustomerAction.confirm, sheet=$id, user=$user;
+	STATE TO deliver;
+}
+ACTION directPay {
+	FOREACH Detail {
+		PENDING PendingOrderDeliver +(customer:customer, sheet:$id, row:$row);
+		BOOK CustomerAccount AT(customer) SET invoiceShould+=amount;
+	}
+	HISTORY CustomerHistory 
+		SET customer=customer, action=EnumCustomerAction.payDirect, sheet=$id, user=$user;
+	STATE TO deliver;
+}
+STATE deliver {
+	ACTION delivered {
+		STATE TO end;
+	}
+};

@@ -10,7 +10,7 @@ export class VTest extends VPage<CTest> {
 	}
 	content() {
 		let btnArr:[string, ()=>void][] = [
-			['测试开始', this.controller.showConsole],
+			['开单-开票-发货-收款', this.controller.showConsole],
 			['存订单', this.controller.saveOrder1],
 			['取订单', this.controller.getOrder1],
 			['确认订单', this.controller.confirmOrder1],

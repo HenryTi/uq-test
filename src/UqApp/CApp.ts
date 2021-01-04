@@ -1,4 +1,5 @@
 //=== UqApp builder created on Sat Dec 19 2020 21:49:21 GMT-0500 (GMT-05:00) ===//
+import { nav } from "tonva";
 import { CTest } from "UqTest/CTest";
 import { testCustomerPay } from "UqTest/CustmerPay";
 import { CUqApp } from "./CBase";
@@ -19,8 +20,8 @@ export class CApp extends CUqApp {
 	notify = async () => {
 		let ret = await this.uqs.Test.Notify.submit({
 			subject: subjectName, 
-			discription: 'memo-test @' + new Date().toString(), 
-			delta: 2,
+			discription: 'b 说明', 
+			delta: 3.3,
 			balance: undefined,
 		});
 		alert('notify return: ' + JSON.stringify(ret));

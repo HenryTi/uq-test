@@ -1,0 +1,216 @@
+-- PENDING Receivable +(customer:1, product:2, pack:2, price:3.5) to recId;
+-- PENDING Receivable -at recId;
+-- PENDING Receivable -(price:2.5) at recId done [del|red|cancel|] if 3*2=1;
+-- select 语句一定要加 done 字段到条件。done=0 pending，done=1 done，done=-1 cancel, done=-2 red
+
+BOOK CustomerAccount ver 0.2 (
+	KEY customer ID,
+	payType ENUM EnumCustomerPayType,
+	deposit DEC(14,2),
+	receivable DEC(14,2),
+	invoiceShould DEC(14,2),
+	invoicePre DEC(14,2),
+);
+
+ENUM EnumCustomerPayType (
+	direct			= 1,
+	receivable		= 2,
+);
+
+-- 用户对客户的操作权限
+-- 应该可以放到一个全局uq中，在一处设置，全部的uq都可以共享
+MAP UserCustomer (
+	KEY user ID [$user],
+	KEY customer ID,
+	canChangePayType TINYINT,
+	canConfirmOrder TINYINT,
+);
+
+ENUM EnumCustomerAction (
+	order			=	1,			-- 下订单
+	confirm			=	2,			-- 确认，公司内部确认。直接支付没有这个过程
+	payDirect 		=	10,			-- 直接支付，针对订单直接支付
+	payReceivable	=	11,			-- 付应收
+	deposit			=	12,			-- 预付
+	payReturn		=	13,			-- 退款
+	invoice			=	20,			-- 开票
+	invoicePre		=	21,			-- 预开票
+	deliver			=	30,			-- 发货
+	return			=	41,			-- 退货
+	cancel			=	100,		-- 取消，在确认订单之前。确认之后，只能做退货
+	red				=	101,		-- 红冲，订单发生错误，修改订单
+);
+
+History CustomerHistory (
+	Date,
+	customer ID,
+	action ENUM EnumCustomerAction,
+	sheet ID,
+	row  SMALLINT DEFAULT 0,			-- 如果不涉及订单行明细，则0
+	user ID [$User],
+	value DEC(14,2),
+);
+
+SHEET Deposit (
+	customer ID,
+	deposit DEC(14,2),
+	receiptNo CHAR(20),
+	bankReceiptNo CHAR(20),
+)
+ACTION confirm {
+	BOOK CustomerAccount AT(customer) SET deposit+=deposit;
+	HISTORY CustomerHistory SET customer=customer, sheet=$id, action=EnumCustomerAction.deposit;
+	STATE TO End;
+};
+
+SHEET Invoice ver 0.5 (
+	customer ID,
+	ARR detail (
+		pendingId ID,
+		amount DEC(14,2),
+	),
+)
+ACTION confirm {
+	VAR sumAmount DEC(14,2) = 0;
+	FOREACH detail {
+		VAR rowAmount DEC(14,2);
+		SET rowAmount=amount FROM PendingOrderInvoice WHERE id=pendingId;
+		PENDING PendingOrderInvoice as a - at pendingId;
+		SET sumAmount = sumAmount + rowAmount;
+		BOOK CustomerAccount as a AT(customer) SET invoiceShould-=rowAmount;
+	}
+	HISTORY CustomerHistory as a SET customer=customer, sheet=$id
+		, action=EnumCustomerAction.invoice
+		, value=sumAmount;
+	STATE TO End;
+};
+
+SHEET Deliver ver 0.1 (
+	customer ID,
+	ARR detail (
+		pendingId ID,
+		quantity DEC(14,2),
+	),
+)
+ACTION confirm {
+	TABLE sheetIds (KEY sheetId ID);
+	FOREACH detail {
+		VAR sheetId ID, 
+			quantityDelivered DEC(14,2),  	-- 已发货量
+			quantityOnOrder DEC(14,2);		-- 单上订量
+		SET sheetId=NULL;
+		SET sheetId=sheet FROM PendingOrderDeliver WHERE id=pendingId;
+		IF sheetId IS NULL {CONTINUE;}
+		SET quantityOnOrder=a.quantity, quantityDelivered=a.quantityDelivered 
+			FROM OrderDetail as a WHERE a.sheet=sheetId AND a.row=$row;
+		PENDING PendingOrderDeliver as a - at pendingId 
+			Done IF quantityOnOrder-quantityDelivered=0;
+		HISTORY CustomerHistory 
+			SET customer=customer, sheet=$id, row=$row, action=EnumCustomerAction.deliver, value=quantity;
+		BOOK sheetIds AT(sheetId);
+	}
+	FOREACH (VAR sheetId ID OF SELECT sheetId FROM sheetIds) {
+		IF NOT EXISTS(SELECT a.id FROM PendingOrderDeliver as a WHERE a.sheet=sheetId) {
+			SHEET Order ID sheetId STATE TO end;
+		}
+	}
+	STATE TO End;
+};
+
+-- 不管是按单结，按品结，按金额结，都是查询之后，根据一系列的pendingId来结算
+-- 主要靠查询和界面来选择要结算的明细
+-- 先做deposit单，用deposit减当前收款项
+SHEET PayReceivable ver 0.2 (
+	customer ID,
+	ARR rows (
+		pendingId ID,
+	),
+)
+VERIFY 
+RETURNS ret (
+	errorNo TINYINT,
+	errorMessage TEXT,
+) {
+	VAR deposit DEC(14,2), sumAmount DEC(14,2), rowAmount DEC(14,2);
+	VAR sheet ID, row SMALLINT;
+	SET deposit=a.deposit FROM CustomerAccount as a WHERE a.customer=customer;
+	IF deposit IS NULL {
+		SET deposit = 0;
+	}
+	SET sumAmount = 0;
+	FOREACH rows
+	{
+		SET sheet=a.sheet, row=a.row FROM PendingOrderReceivable as a WHERE a.id=pendingId;
+		SET rowAmount=a.amount FROM OrderDetail as a WHERE a.sheet=sheet AND a.row=row;
+		IF NOT rowAmount IS NULL {
+			SET sumAmount = sumAmount + rowAmount;
+		}
+	}
+	IF deposit < sumAmount {
+		INTO ret SELECT 1 as errorNo, 'not enough deposit to pay receivable' as errorMessage;
+		RETURN;
+	}
+}
+ACTION confirm {
+	VAR sumAmount DEC(14,2) = 0;
+	FOREACH rows
+	{
+		VAR rowAmount DEC(14,2);
+		SET rowAmount=b.amount 
+			FROM PendingOrderReceivable as a
+				JOIN OrderDetail as b ON a.sheet=b.sheet AND a.row=b.row
+			WHERE a.id=pendingId;
+		PENDING PendingOrderReceivable - AT pendingId Done;
+		SET sumAmount = sumAmount + rowAmount;
+		BOOK CustomerAccount AT(customer) SET deposit-=rowAmount, receivable-=rowAmount;
+	}
+	HISTORY CustomerHistory as a SET customer=customer, sheet=$id
+		, action=EnumCustomerAction.payReceivable
+		, value=sumAmount;
+	STATE TO End;
+};
+
+QUERY GetCustomerAccount(
+	customer ID,	
+)
+RETURNS ret (
+	customer ID,
+	deposit DEC(14,2),
+	receivable DEC(14,2),
+	invoiceShould DEC(14,2),
+	invoicePre DEC(14,2),
+) {
+	INTO ret SELECT a.customer, 
+		ifnull(a.deposit, 0) as deposit, 
+		ifnull(a.receivable, 0) as receivable, 
+		ifnull(a.invoiceShould, 0) as invoiceShould, 
+		ifnull(a.invoicePre, 0) as invoicePre
+		FROM CustomerAccount as a
+		WHERE a.customer=customer;
+	IF (SELECT count(*) FROM ret)=0 {
+		INTO ret SELECT customer as customer, 0 as deposit, 0 as receivable, 0 as invoiceShould, 0 as invoicePre;
+	}
+};
+
+QUERY GetCustomerHistory ver 0.1 (
+	customer ID,
+	earlier DATETIME,
+)
+PAGE (
+	date DATETIME DESC,
+	customer ID,
+	action TINYINT,
+	sheet ID,
+	row SMALLINT,			-- 如果不涉及订单行明细，则0
+	value DEC(14,2),
+	user ID,
+) {
+	IF earlier IS NULL {
+		SET earlier=now();
+	}
+	PAGE SELECT a.date, a.customer, a.action, a.sheet, a.row, a.value, a.user
+		FROM CustomerHistory as a
+		WHERE a.customer=customer AND a.date<earlier
+		ORDER BY a.date DESC
+		LIMIT $pageSize;;
+};

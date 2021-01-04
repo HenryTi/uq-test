@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {observable} from 'mobx';
-import marked from 'marked';
 import _ from 'lodash';
 import {User, Guest/*, UserInNav*/} from '../tool/user';
 import {Page} from './page/page';
@@ -129,12 +128,14 @@ export class NavView extends React.Component<Props, NavViewState> {
         let err = fetchError.error;
         if (err !== undefined) {
             if (err.unauthorized === true) {
-                await nav.showLogin(undefined);
+				await nav.showLogin(undefined);
+				//nav.navigateToLogin();
                 return;
             }
             switch (err.type) {
                 case 'unauthorized':
                     await nav.showLogin(undefined);
+					//nav.navigateToLogin();
                     return;
                 case 'sheet-processing':
                     nav.push(<SystemNotifyPage message="单据正在处理中。请重新操作！" />);
@@ -600,6 +601,7 @@ export class Nav {
             }
             //window.setInterval(()=>console.error('tick every 5 seconds'), 5000);
 			nav.clear();
+			nav.onSysNavRoutes();
 			this.startWait();
             
             let user: User = this.local.user.get();
@@ -610,6 +612,7 @@ export class Nav {
                 }
                 else {
                     await nav.showLogin(undefined);
+					//nav.navigateToLogin();
                 }
                 return;
             }
@@ -668,6 +671,19 @@ export class Nav {
 
 	onSysNavRoutes() {
 		this.onNavRoutes(this.sysRoutes);
+	}
+
+	navigateToLogin() {
+		nav.navigate('/login');
+	}
+
+	openSysPage(url: string) {
+		let navPage: NavPage = this.sysRoutes[url];
+		if (navPage === undefined) {
+			alert(url + ' is not defined in sysRoutes');
+			return;
+		}
+		navPage(undefined);
 	}
 
 	private navPageRoutes: {[url:string]: NavPage};
@@ -818,14 +834,15 @@ export class Nav {
         }
     }
 
-    private privacyPage = async (privacy:string) => {
-        let html = await this.getPrivacy(privacy);
-        let content = {__html: marked(html)};
+    private privacyPage = async (htmlString: string) => {
+        //let html = await this.getPrivacy(privacy);
+		//let content = {__html: marked(html)};
+		let content = {__html: htmlString};
         nav.push(<Page header="隐私政策">
             <div className="p-3" dangerouslySetInnerHTML={content} />
         </Page>);
     }
-
+/*
     private async getPrivacy(privacy:string):Promise<string> {
         const headers = new  Headers({
             "Content-Type":'text/plain'
@@ -849,7 +866,7 @@ export class Nav {
         }
         return privacy;
     }
-
+*/
     async showLogin(callback?: (user:User)=>Promise<void>, withBack?:boolean) {
         let lv = await import('../entry/login');
         let loginView = React.createElement(

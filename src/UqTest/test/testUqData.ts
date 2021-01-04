@@ -1,76 +1,67 @@
 import _ from 'lodash';
-import { UQs, CustomerPayment } from "UqApp";
-import { Console } from "../Console";
+import { CustomerPayment } from "UqApp";
 import { data } from "../mock-data";
-import { pickRandomArr } from "../tools/pickRandomArr";
+import { pickRandomArr, UQsTester } from "./tools";
 
-export async function testUqData(uqs: UQs, console: Console) {
+export async function testUqData(tester: UQsTester) {
+	let {uqs} = tester;
 	let {Order} = uqs.CustomerPayment;
 
-	console.log();
-	console.log('== order save');
+	tester.log();
+	tester.log('== order save');
 	let retSave1 = await Order.save('order test', data.order1);
-	console.log(retSave1);
+	tester.log(retSave1);
 
-	console.log();
-	console.log('== order confirm');
-	let retConfirm = await Order.actionDirect(retSave1.id, retSave1.flow, retSave1.state, 'confirm');
-	console.log(retConfirm);
+	tester.log();
+	tester.log('== order confirm');
+	let retConfirm = await tester.test(Order.actionDebugDirect(retSave1.id, retSave1.flow, retSave1.state, 'confirm'));
 
-	console.log();
-	console.log('== order save');
-	let retSave2 = await Order.save('order test', data.order2);
-	console.log(retSave2);
+	tester.log();
+	tester.log('== order save');
+	let retSave2 = await tester.test(Order.save('order test', data.order2));
 
-	console.log();
-	console.log('== order confirm');
-	let retConfirm2 = await Order.actionDirect(retSave2.id, retSave2.flow, retSave2.state, 'confirm');
-	console.log(retConfirm2);
+	tester.log();
+	tester.log('== order confirm');
+	let retConfirm2 = await tester.test(Order.actionDebugDirect(retSave2.id, retSave2.flow, retSave2.state, 'confirm'));
 
-	console.log();
-	console.log('== customer receivable');
+	tester.log();
+	tester.log('== customer receivable');
 	let {CustomerPendingReceivable} = uqs.CustomerPayment;
-	let queryReceivable = await CustomerPendingReceivable.query({customer: data.customer1});
-	console.log(queryReceivable);
+	let queryReceivable = await tester.test(CustomerPendingReceivable.query({customer: data.customer1}));
 
-	console.log();
-	console.log('== customer pending deliver');
+	tester.log();
+	tester.log('== customer pending deliver');
 	let {CustomerPendingDeliver} = uqs.CustomerPayment;
-	let pendingDeliver = await CustomerPendingDeliver.query({customer: data.customer1});
-	console.log(pendingDeliver);
+	let pendingDeliver = await tester.test(CustomerPendingDeliver.query({customer: data.customer1}));
 
-	console.log();
-	console.log('== customer pending invoice');
+	tester.log();
+	tester.log('== customer pending invoice');
 	let {CustomerPendingInvoice} = uqs.CustomerPayment;
-	let pendingInvoice = await CustomerPendingInvoice.query({customer: data.customer1});
-	console.log(pendingInvoice);
+	let pendingInvoice = await tester.test(CustomerPendingInvoice.query({customer: data.customer1}));
 
-	console.log();
-	console.log('== pick 50% from customer receivable');
+	tester.log();
+	tester.log('== pick 50% from customer receivable');
 	let r1 = pickRandomArr(queryReceivable.ret, 50);
-	console.log(r1);
+	tester.log(r1);
 
-	console.log();
-	console.log('== pick 50% from left customer receivable');
+	tester.log();
+	tester.log('== pick 50% from left customer receivable');
 	let r2 = pickRandomArr(_.without(queryReceivable.ret, ...r1), 50);
-	console.log(r2);
+	tester.log(r2);
 
-	console.log();
-	console.log('== pick rest customer receivable');
+	tester.log();
+	tester.log('== pick rest customer receivable');
 	let r3 = _.without(queryReceivable.ret, ...r1, ...r2);
-	console.log(r3);
+	tester.log(r3);
 
-	console.log();
-	console.log('== pick customer balance');
-	let retBalance = await uqs.CustomerPayment.GetCustomerBalance.query({customer:data.customer1});
-	console.log(retBalance);
+	tester.log();
+	tester.log('== pick customer balance');
+	let retBalance = await tester.test(uqs.CustomerPayment.GetCustomerAccount.query({customer:data.customer1}));
 
-	console.log();
-	console.log('== pick customer history');
-	let retHistory1 = await uqs.CustomerPayment.GetCustomerHistory.page({
+	tester.log();
+	tester.log('== pick customer history');
+	let retHistory1 = await tester.test(uqs.CustomerPayment.GetCustomerHistory.page({
 		customer:data.customer1,
-		before: undefined,
-	}, undefined, 1000);
-	console.log(retHistory1);
-
+		earlier: undefined,
+	}, undefined, 1000));
 }
